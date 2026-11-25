@@ -184,6 +184,75 @@ def clean_discount_column(df):
     return df
 
 
+def clean_weight_column(df):
+
+    def replace_decimal_comma(series):
+        # Convierte valores como "2,5 kg" a "2.5 kg"
+        return series.str.replace(",", ".", regex=False)
+
+    def convert_to_kilograms(series):
+        # Convierte "5000 g", "0.0050 ton" y "5 kg" a 5.0 (kilogramos).
+        # Los valores sin unidad ya estan en kilogramos.
+        factors = {"g": 0.001, "kg": 1, "ton": 1000}
+
+        def convert_value(value):
+            if not isinstance(value, str):
+                return value
+            parts = value.split()
+            number = float(parts[0])
+            unit = parts[1].lower() if len(parts) > 1 else "kg"
+            return round(number * factors[unit], 4)
+
+        return series.apply(convert_value)
+
+    df["weight"] = df["weight"].str.strip()
+    df["weight"] = replace_decimal_comma(df["weight"])
+    df["weight"] = convert_to_kilograms(df["weight"])
+    df["weight"] = df["weight"].astype(float)
+
+    return df
+
+
+def clean_units_column(df):
+    # Convierte las unidades a entero, conservando los valores faltantes
+    df["units"] = pd.to_numeric(df["units"], errors="coerce").astype("Int64")
+    return df
+
+
+def clean_unit_price_column(df):
+
+    def clean_strings_starting_with_dollar(series):
+        # Convierte valores como "$49,000.00" a "49000.00"
+        return series.str.replace("$", "", regex=False).str.replace(
+            ",", "", regex=False
+        )
+
+    def remove_thousands_dots(series):
+        # Convierte valores como "1.750.000.00" a "1750000.00":
+        # solo el ultimo punto es el separador decimal
+        def convert_value(value):
+            if isinstance(value, str) and value.count(".") > 1:
+                integer_part, decimal_part = value.rsplit(".", 1)
+                return integer_part.replace(".", "") + "." + decimal_part
+            return value
+
+        return series.apply(convert_value)
+
+    df["unit_price"] = df["unit_price"].str.strip()
+    df["unit_price"] = clean_strings_starting_with_dollar(df["unit_price"])
+    df["unit_price"] = remove_thousands_dots(df["unit_price"])
+    df["unit_price"] = df["unit_price"].astype(float)
+
+    return df
+
+
+def clean_contact_email_column(df):
+    # Normaliza los correos y reemplaza "sin correo" por un valor faltante
+    df["contact_email"] = df["contact_email"].str.strip().str.lower()
+    df["contact_email"] = df["contact_email"].replace("sin correo", pd.NA)
+    return df
+
+
 def main():
     df = pd.read_csv(INPUT_FILE)
     df = clean_column_names(df)
@@ -193,6 +262,10 @@ def main():
     df = clean_purchase_date_column(df)
     df = clean_amount_column(df)
     df = clean_discount_column(df)
+    df = clean_weight_column(df)
+    df = clean_units_column(df)
+    df = clean_unit_price_column(df)
+    df = clean_contact_email_column(df)
     df.to_csv(OUTPUT_FILE, index=False)
 
 

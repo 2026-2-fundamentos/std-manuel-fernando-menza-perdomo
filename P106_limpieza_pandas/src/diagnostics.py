@@ -13,13 +13,13 @@ def main():
 
     # series = series.replace(r"\d", "d", regex=True)
 
-    # series = series[series.str.match(r"\d{2}/\d{2}/\d{4}")]
+    #series = series[series.str.match(r"\d{2}/\d{2}/\d{4}")]
 
     series = series.drop_duplicates()
     series = series.sort_values(ascending=True)
     series = series.to_list()
-    # series = [s for s in series if isinstance(s, str) and "." in s]
-    # series = sorted(series, key=lambda x: len(x))
+    #series = [s for s in series if isinstance(s, str) and "." in s]
+    #series = sorted(series, key=lambda x: len(x))
 
     for value in series:
         print(repr(value))
